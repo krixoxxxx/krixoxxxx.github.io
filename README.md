@@ -1,1 +1,0 @@
-# krixoxxxx.github.io
