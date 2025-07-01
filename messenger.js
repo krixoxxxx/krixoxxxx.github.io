@@ -3,7 +3,21 @@
 // ========== Configuration ==========
 // IMPORTANT: Store API keys securely using environment variables
 // Do NOT hardcode API keys in client-side code
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_API_KEY_HERE'; // Replace with environment variable
+
+// Load API key from environment file
+async function loadApiKey() {
+    try {
+        const response = await fetch('geminiAPI.env');
+        const envContent = await response.text();
+        const apiKeyMatch = envContent.match(/GEMINI_API_KEY=(.+)/);
+        return apiKeyMatch ? apiKeyMatch[1] : null;
+    } catch (error) {
+        console.error('Failed to load API key:', error);
+        return null;
+    }
+}
+
+let GEMINI_API_KEY = null;
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // ========== Load Therapy Bot Rules ==========
@@ -118,7 +132,13 @@ chatInputForm.addEventListener('submit', async (e) => {
 });
 
 // Optionally, greet the user on load
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    GEMINI_API_KEY = await loadApiKey();
+    if (!GEMINI_API_KEY) {
+        console.error('No API key found. Please check your geminiAPI.env file.');
+        return;
+    }
+    
     const greeting = "Hi! I'm WelloWay, your supportive therapy bot. How can I help you today?";
     appendMessage('model', greeting);
     conversation.push({ role: 'model', parts: [{ text: greeting }] });
