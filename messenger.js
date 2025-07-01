@@ -1,22 +1,29 @@
 // Gemini AI Chatbot
 
 // ========== Configuration ==========
-// WARNING: This is for GitHub Pages deployment only
-// For production, use a backend server to protect API keys
-
-const GEMINI_API_KEY = 'AIzaSyA8GVXwFZvN5cGCGeAjqS3QmdhAAmyX3Lk';
+const GEMINI_API_KEY = 'AIzaSyACsRYQWrJfFTB8RVrh_S945O_j2WvLNu8'; // <-- Replace with your Gemini API key
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // ========== Load Therapy Bot Rules ==========
+let THERAPY_BOT_RULES = '';
+let conversation = [];
 
-// The rules for the AI therapy bot (from WelloWayRuleList.txt)
-const THERAPY_BOT_RULES = `1. Confidentiality: Never share or store user conversations outside the session. Respect user privacy at all times.\n2. Be Friendly and Conversational: Use a warm, approachable tone. Keep responses concise and easy to read in a chat format.\n3. Evidence-Based Support: When offering advice or suggestions, prioritize methods and resources supported by scientific research (e.g., CBT, mindfulness, behavioral activation). Reference evidence-based practices when possible.\n4. No Diagnosis or Medical Advice: Do not attempt to diagnose mental health conditions or provide medical advice. Encourage users to seek professional help for diagnoses or urgent needs.\n5. Crisis Protocol: If a user expresses thoughts of self-harm, suicide, or harm to others, provide supportive messages and encourage them to contact a mental health professional or emergency services immediately.\n6. Active Listening: Reflect back what the user says to show understanding and encourage them to share more. Use open-ended questions sparingly; focus more on providing reassurance and affirming statements.\n7. Positive Reinforcement: Offer encouragement and highlight user strengths to help them feel supported and motivated.\n8. Boundaries: Politely decline to answer questions or engage in conversations outside the scope of mental health support (e.g., legal, financial, or medical advice).\n9. Resource Suggestion: When appropriate, suggest reputable, evidence-based mental health resources, hotlines, or self-care techniques. Provide links or references when possible.\n10. Respect Autonomy: Empower users to make their own decisions. Avoid giving direct instructions unless it is to encourage safety or evidence-based self-help.\n11. Cultural Sensitivity: Be mindful and respectful of cultural, religious, and personal differences.\n12. Transparency: Clearly state that you are an AI and not a human therapist.\n13. No Personal Data Collection: Do not ask for or store personal identifying information.\n14. Emotion Validation: Validate the user's feelings and experiences, acknowledging their emotions as real and important.\n15. Consistent, Supportive Tone: Maintain a calm, supportive, and professional tone at all times.\n16. Encourage Professional Help: Remind users that AI support is not a substitute for professional therapy and encourage seeking help when needed.`;
-
-// ========== Chatbot State ==========
-// Always start the conversation with the rules as a user message
-let conversation = [
-    { role: 'user', parts: [{ text: THERAPY_BOT_RULES }] }
-]; // Array of {role: 'user'|'model', parts: [{text: string}]}
+async function loadTherapyBotRules() {
+    try {
+        const response = await fetch('WelloWayRuleList.txt');
+        if (!response.ok) throw new Error('Failed to load rules');
+        THERAPY_BOT_RULES = await response.text();
+        conversation = [
+            { role: 'user', parts: [{ text: THERAPY_BOT_RULES }] }
+        ];
+    } catch (error) {
+        console.error('Error loading rules:', error);
+        THERAPY_BOT_RULES = 'Therapy bot rules could not be loaded.';
+        conversation = [
+            { role: 'user', parts: [{ text: THERAPY_BOT_RULES }] }
+        ];
+    }
+}
 
 // ========== DOM Elements ==========
 const chatMessages = document.querySelector('.chat-messages');
@@ -24,21 +31,12 @@ const chatInputForm = document.querySelector('.chat-input-area');
 const chatInput = document.querySelector('.chat-input');
 
 // ========== Helper Functions ==========
-
-// Initialize markdown-it
-const md = window.markdownit({
-  html: false,
-  linkify: true,
-  breaks: true
-});
+const md = window.markdownit({ html: false, linkify: true, breaks: true });
 
 function appendMessage(role, text) {
     const msgDiv = document.createElement('div');
-    msgDiv.classList.add('message');
-    msgDiv.classList.add(role === 'user' ? 'sent' : 'received');
-    // Parse Markdown with markdown-it and sanitize
-    const html = DOMPurify.sanitize(md.render(text));
-    msgDiv.innerHTML = html;
+    msgDiv.classList.add('message', role === 'user' ? 'sent' : 'received');
+    msgDiv.innerHTML = DOMPurify.sanitize(md.render(text));
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -49,25 +47,19 @@ function setInputEnabled(enabled) {
 }
 
 // ========== Gemini API Call ==========
-
 async function sendToGemini(conversation) {
+    // Debug: log the conversation being sent
+    console.log("Sending to Gemini:", JSON.stringify({ contents: conversation }, null, 2));
     try {
         const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: conversation
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: conversation })
         });
-
         if (!response.ok) {
             throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
         }
-
         const data = await response.json();
-
         if (
             data.candidates &&
             data.candidates[0] &&
@@ -80,7 +72,6 @@ async function sendToGemini(conversation) {
         } else {
             return "Sorry, I didn't understand that.";
         }
-
     } catch (error) {
         console.error("Error: Unable to connect to Gemini API.", error);
         return "Sorry, I couldn't connect to the AI service.";
@@ -88,37 +79,24 @@ async function sendToGemini(conversation) {
 }
 
 // ========== Event Handlers ==========
-
 chatInputForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const userMessage = chatInput.value.trim();
     if (!userMessage) return;
-
-    // Show user message
     appendMessage('user', userMessage);
-
-    // Add to conversation
     conversation.push({ role: 'user', parts: [{ text: userMessage }] });
-
-    // Clear input and disable while waiting
     chatInput.value = '';
     setInputEnabled(false);
-
-    // Get AI response
     const aiReply = await sendToGemini(conversation);
-
-    // Show AI message
     appendMessage('model', aiReply);
-
-    // Add AI reply to conversation
     conversation.push({ role: 'model', parts: [{ text: aiReply }] });
-
     setInputEnabled(true);
     chatInput.focus();
 });
 
-// Initialize the app
+// ========== App Initialization ==========
 window.addEventListener('DOMContentLoaded', async () => {
+    await loadTherapyBotRules();
     const greeting = "Hi! I'm WelloWay, your supportive therapy bot. How can I help you today?";
     appendMessage('model', greeting);
     conversation.push({ role: 'model', parts: [{ text: greeting }] });
@@ -144,7 +122,6 @@ window.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('chat-theme', 'dark');
         }
     }
-    // Load saved mode
     const savedMode = localStorage.getItem('chat-theme');
     setMode(savedMode === 'light' ? 'light' : 'dark');
     modeSwitchBtn.addEventListener('click', () => {
@@ -171,7 +148,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     maximizeBtn.addEventListener('click', () => {
         setMinimized(false);
     });
-    // Optionally, allow header click to maximize as well
     chatHeader.addEventListener('click', () => {
         if (minimized) setMinimized(false);
     });
