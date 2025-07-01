@@ -1,7 +1,9 @@
 // Gemini AI Chatbot
 
 // ========== Configuration ==========
-const GEMINI_API_KEY = 'AIzaSyACsRYQWrJfFTB8RVrh_S945O_j2WvLNu8'; // <-- Replace with your Gemini API key
+// IMPORTANT: Store API keys securely using environment variables
+// Do NOT hardcode API keys in client-side code
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_API_KEY_HERE'; // Replace with environment variable
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // ========== Load Therapy Bot Rules ==========
