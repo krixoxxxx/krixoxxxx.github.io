@@ -1,0 +1,25 @@
+# Environment files (contain sensitive data)
+*.env
+.env
+geminiAPI.env
+
+# API keys and secrets
+.env.local
+.env.production
+.env.development
+
+# Node modules (if using Node.js)
+node_modules/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo 
