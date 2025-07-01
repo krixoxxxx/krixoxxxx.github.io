@@ -8,9 +8,6 @@ geminiAPI.env
 .env.production
 .env.development
 
-# Node modules (if using Node.js)
-node_modules/
-
 # Logs
 *.log
 

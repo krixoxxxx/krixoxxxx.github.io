@@ -1,29 +1,16 @@
 // Gemini AI Chatbot
 
 // ========== Configuration ==========
-// IMPORTANT: Store API keys securely using environment variables
-// Do NOT hardcode API keys in client-side code
+// WARNING: This is for GitHub Pages deployment only
+// For production, use a backend server to protect API keys
 
-// Load API key from environment file
-async function loadApiKey() {
-    try {
-        const response = await fetch('geminiAPI.env');
-        const envContent = await response.text();
-        const apiKeyMatch = envContent.match(/GEMINI_API_KEY=(.+)/);
-        return apiKeyMatch ? apiKeyMatch[1] : null;
-    } catch (error) {
-        console.error('Failed to load API key:', error);
-        return null;
-    }
-}
-
-let GEMINI_API_KEY = null;
+const GEMINI_API_KEY = 'AIzaSyA8GVXwFZvN5cGCGeAjqS3QmdhAAmyX3Lk';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // ========== Load Therapy Bot Rules ==========
 
 // The rules for the AI therapy bot (from WelloWayRuleList.txt)
-const THERAPY_BOT_RULES = `1. Confidentiality: Never share or store user conversations outside the session. Respect user privacy at all times.\n2. Non-judgmental Support: Respond to all user messages with empathy and without judgment, regardless of the topic.\n3. No Diagnosis: Do not attempt to diagnose mental health conditions or provide medical advice. Encourage users to seek professional help for diagnoses.\n4. Crisis Protocol: If a user expresses thoughts of self-harm, suicide, or harm to others, provide supportive messages and encourage them to contact a mental health professional or emergency services immediately.\n5. Active Listening: Reflect back what the user says to show understanding and encourage them to share more.\n6. Encouragement: Offer positive reinforcement and encouragement to help users feel supported and motivated.\n7. Boundaries: Politely decline to answer questions or engage in conversations that are outside the scope of mental health support (e.g., legal, financial, or medical advice).\n8. Resource Suggestion: When appropriate, suggest reputable mental health resources, hotlines, or self-care techniques.\n9. Respect Autonomy: Empower users to make their own decisions and avoid giving direct instructions unless it is to encourage safety.\n10. Cultural Sensitivity: Be mindful and respectful of cultural, religious, and personal differences.\n11. Transparency: Clearly state that you are an AI and not a human therapist.\n12. No Personal Data Collection: Do not ask for or store personal identifying information.\n13. Emotion Validation: Validate the user's feelings and experiences, acknowledging their emotions as real and important.\n14. Consistent Tone: Maintain a calm, supportive, and professional tone at all times.\n15. Encourage Professional Help: Remind users that AI support is not a substitute for professional therapy and encourage seeking help when needed.`;
+const THERAPY_BOT_RULES = `1. Confidentiality: Never share or store user conversations outside the session. Respect user privacy at all times.\n2. Be Friendly and Conversational: Use a warm, approachable tone. Keep responses concise and easy to read in a chat format.\n3. Evidence-Based Support: When offering advice or suggestions, prioritize methods and resources supported by scientific research (e.g., CBT, mindfulness, behavioral activation). Reference evidence-based practices when possible.\n4. No Diagnosis or Medical Advice: Do not attempt to diagnose mental health conditions or provide medical advice. Encourage users to seek professional help for diagnoses or urgent needs.\n5. Crisis Protocol: If a user expresses thoughts of self-harm, suicide, or harm to others, provide supportive messages and encourage them to contact a mental health professional or emergency services immediately.\n6. Active Listening: Reflect back what the user says to show understanding and encourage them to share more. Use open-ended questions sparingly; focus more on providing reassurance and affirming statements.\n7. Positive Reinforcement: Offer encouragement and highlight user strengths to help them feel supported and motivated.\n8. Boundaries: Politely decline to answer questions or engage in conversations outside the scope of mental health support (e.g., legal, financial, or medical advice).\n9. Resource Suggestion: When appropriate, suggest reputable, evidence-based mental health resources, hotlines, or self-care techniques. Provide links or references when possible.\n10. Respect Autonomy: Empower users to make their own decisions. Avoid giving direct instructions unless it is to encourage safety or evidence-based self-help.\n11. Cultural Sensitivity: Be mindful and respectful of cultural, religious, and personal differences.\n12. Transparency: Clearly state that you are an AI and not a human therapist.\n13. No Personal Data Collection: Do not ask for or store personal identifying information.\n14. Emotion Validation: Validate the user's feelings and experiences, acknowledging their emotions as real and important.\n15. Consistent, Supportive Tone: Maintain a calm, supportive, and professional tone at all times.\n16. Encourage Professional Help: Remind users that AI support is not a substitute for professional therapy and encourage seeking help when needed.`;
 
 // ========== Chatbot State ==========
 // Always start the conversation with the rules as a user message
@@ -64,21 +51,19 @@ function setInputEnabled(enabled) {
 // ========== Gemini API Call ==========
 
 async function sendToGemini(conversation) {
-    const body = {
-        contents: conversation
-    };
-
     try {
         const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify({
+                contents: conversation
+            })
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to fetch from Gemini API: ${response.status} ${response.statusText}`);
+            throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -95,6 +80,7 @@ async function sendToGemini(conversation) {
         } else {
             return "Sorry, I didn't understand that.";
         }
+
     } catch (error) {
         console.error("Error: Unable to connect to Gemini API.", error);
         return "Sorry, I couldn't connect to the AI service.";
@@ -131,14 +117,8 @@ chatInputForm.addEventListener('submit', async (e) => {
     chatInput.focus();
 });
 
-// Optionally, greet the user on load
+// Initialize the app
 window.addEventListener('DOMContentLoaded', async () => {
-    GEMINI_API_KEY = await loadApiKey();
-    if (!GEMINI_API_KEY) {
-        console.error('No API key found. Please check your geminiAPI.env file.');
-        return;
-    }
-    
     const greeting = "Hi! I'm WelloWay, your supportive therapy bot. How can I help you today?";
     appendMessage('model', greeting);
     conversation.push({ role: 'model', parts: [{ text: greeting }] });
