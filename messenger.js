@@ -101,13 +101,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     appendMessage('model', greeting);
     conversation.push({ role: 'model', parts: [{ text: greeting }] });
 
-    // Minimize/open logic
-    const minimizeBtn = document.querySelector('.minimize-btn');
-    const maximizeBtn = document.querySelector('.maximize-btn');
     const modeSwitchBtn = document.querySelector('.mode-switch-btn');
     const messengerContainer = document.querySelector('.messenger-container');
     const chatHeader = document.querySelector('.chat-header');
-    let minimized = false;
+    const minimizeBtn = document.querySelector('.minimize-btn');
 
     // Theme logic
     const root = document.documentElement;
@@ -129,26 +126,66 @@ window.addEventListener('DOMContentLoaded', async () => {
         setMode(isLight ? 'dark' : 'light');
     });
 
-    function setMinimized(state) {
-        minimized = state;
-        if (minimized) {
-            messengerContainer.classList.add('minimized');
-            maximizeBtn.style.display = 'block';
-            minimizeBtn.innerHTML = '<i class="fas fa-plus"></i>';
-        } else {
-            messengerContainer.classList.remove('minimized');
-            maximizeBtn.style.display = 'none';
-            minimizeBtn.innerHTML = '<i class="fas fa-minus"></i>';
-        }
-    }
+    // Collapse/expand logic for in-page chat
     minimizeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        setMinimized(true);
+        messengerContainer.classList.toggle('collapsed');
     });
-    maximizeBtn.addEventListener('click', () => {
-        setMinimized(false);
-    });
+
     chatHeader.addEventListener('click', () => {
-        if (minimized) setMinimized(false);
+        if (messengerContainer.classList.contains('collapsed')) {
+            messengerContainer.classList.remove('collapsed');
+        }
+    });
+
+    // Rating Widget Logic
+    const starsContainer = document.querySelector('.stars');
+    const stars = document.querySelectorAll('.stars .fa-star');
+    const ratingTextarea = document.querySelector('.rating-textarea');
+    const ratingSubmitBtn = document.querySelector('.rating-submit-btn');
+    let currentRating = 0;
+
+    function updateStars(rating) {
+        stars.forEach(star => {
+            if (star.dataset.value <= rating) {
+                star.classList.remove('far');
+                star.classList.add('fas'); // 'fas' is for solid star
+            } else {
+                star.classList.remove('fas');
+                star.classList.add('far'); // 'far' is for regular/outline star
+            }
+        });
+    }
+
+    starsContainer.addEventListener('mouseover', (e) => {
+        if (e.target.matches('.fa-star')) {
+            const rating = e.target.dataset.value;
+            updateStars(rating);
+        }
+    });
+
+    starsContainer.addEventListener('mouseout', () => {
+        updateStars(currentRating); // Revert to the last clicked rating
+    });
+
+    starsContainer.addEventListener('click', (e) => {
+        if (e.target.matches('.fa-star')) {
+            currentRating = e.target.dataset.value;
+            updateStars(currentRating);
+        }
+    });
+
+    ratingSubmitBtn.addEventListener('click', () => {
+        const feedbackText = ratingTextarea.value.trim();
+        if (currentRating === 0) {
+            alert('Please select a star rating before submitting.');
+            return;
+        }
+        
+        console.log(`Rating submitted: ${currentRating} stars`);
+        console.log(`Feedback: ${feedbackText}`);
+        
+        // Provide feedback to the user
+        document.querySelector('.rating-widget').innerHTML = '<h3>Thank you for your feedback!</h3>';
     });
 });
